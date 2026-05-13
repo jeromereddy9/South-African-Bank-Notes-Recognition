@@ -3,8 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Utilities.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Utilities.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Data\\preprocessing.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Data\\preprocessing.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\South_African_Bank_Notes_Recognition.py||{8B382828-6202-11D1-8870-0000F87579D2}",
@@ -47,14 +47,14 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "Utilities.py",
-              "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Utilities.py",
-              "RelativeDocumentMoniker": "Utilities.py",
-              "ToolTip": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Utilities.py",
-              "RelativeToolTip": "Utilities.py",
-              "ViewState": "AgIAACQAAAAAAAAAAAAAADAAAAAAAAAAAAAAAA==",
+              "Title": "preprocessing.py",
+              "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Data\\preprocessing.py",
+              "RelativeDocumentMoniker": "Data\\preprocessing.py",
+              "ToolTip": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Data\\preprocessing.py",
+              "RelativeToolTip": "Data\\preprocessing.py",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-13T20:49:13.047Z",
+              "WhenOpened": "2026-05-13T21:52:00.839Z",
               "EditorCaption": ""
             },
             {
