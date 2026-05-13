@@ -1,0 +1,10 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "task-South-African-Bank-Notes-Recognition",
+      "appliesTo": "South-African-Bank-Notes-Recognition/",
+      "type": "launch"
+    }
+  ]
+}
