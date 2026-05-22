@@ -10,7 +10,7 @@ def detect_edges_canny(image: np.ndarray,
     """
     Detects edges using the Canny algorithm (Canny [1986]).
 
-    The Canny detector satisfies three objectives (Gonzalez & Woods, Sec 10.2):
+    The Canny detector satisfies three objectives:
         1. Low error rate
         2. Good localisation
         3. Single response per true edge
@@ -18,14 +18,6 @@ def detect_edges_canny(image: np.ndarray,
     Preprocessing uses a bilateral filter to suppress background textures
     (e.g. wood grain) while preserving the sharp note boundary, followed by
     a moderate Gaussian blur for remaining noise.
-
-    Args:
-        image          : Grayscale uint8 image.
-        low_threshold  : Lower hysteresis threshold.
-        high_threshold : Upper threshold. Recommended ratio ~1:2 or ~1:3.
-
-    Returns:
-        edge_map : Binary uint8 image — 255 = edge, 0 = non-edge.
     """
     if len(image.shape) == 3:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -44,18 +36,12 @@ def detect_edges_canny(image: np.ndarray,
 # 2. Edge Detection — Sobel
 def detect_edges_sobel(image: np.ndarray) -> np.ndarray:
     """
-    Detects edges using Sobel gradient operators (Gonzalez & Woods, Eq 10-24/25).
+    Detects edges using Sobel gradient operators.
 
         gx = (z7+2z8+z9) - (z1+2z2+z3)
         gy = (z3+2z6+z9) - (z1+2z4+z7)
 
-    Magnitude approximated as |gx| + |gy| (Eq. 10-26).
-
-    Args:
-        image : Grayscale or colour uint8 image.
-
-    Returns:
-        edge_map : Binary uint8 gradient magnitude image.
+    Magnitude approximated as |gx| + |gy|.
     """
     if len(image.shape) == 3:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -176,14 +162,6 @@ def segment_note(image: np.ndarray, method: str = 'canny') -> np.ndarray:
         2. GrabCut — robustly separates note (foreground) from background
         3. Bounding rectangle crop + perspective correction
         4. Return 640×300 cropped note
-
-    Args:
-        image  : Input BGR image.
-        method : 'canny' or 'sobel' (controls edge map; GrabCut always used
-                 for the actual segmentation crop).
-
-    Returns:
-        note   : Segmented note (BGR, 640×300).
     """
     if image is None or image.size == 0:
         raise ValueError("Input image is empty or None.")

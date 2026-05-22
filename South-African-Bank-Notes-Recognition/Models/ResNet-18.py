@@ -2,7 +2,7 @@
 import torch.nn as nn
 from torchvision import models
 
-# Label mapping — must match dataloader output
+# Label mapping 
 CLASS_LABELS = {0: "R10", 1: "R20", 2: "R50", 3: "R100", 4: "R200"}
 NUM_CLASSES  = 5
 
@@ -10,22 +10,7 @@ NUM_CLASSES  = 5
 def build_resnet18(pretrained: bool = True,
                    freeze_backbone: bool = True,
                    dropout_rate: float = 0.4) -> nn.Module:
-    """
-    ResNet-18 adapted for South African banknote classification.
 
-    Improvements over baseline:
-        - Dropout (p=0.4) before the FC head reduces overfitting on the
-          small 68-image dataset.  During training this randomly zeros 40%
-          of the 512 features, forcing the head to learn redundant
-          representations rather than memorising specific training images.
-        - Two-layer head (512→256→5) gives the classifier more capacity to
-          learn denomination-specific boundaries in the feature space.
-
-    Args:
-        pretrained      : Load ImageNet weights (recommended).
-        freeze_backbone : Freeze all layers except head for Phase 1 training.
-        dropout_rate    : Dropout probability before the FC head (default 0.4).
-    """
     weights = models.ResNet18_Weights.DEFAULT if pretrained else None
     model   = models.resnet18(weights=weights)
 

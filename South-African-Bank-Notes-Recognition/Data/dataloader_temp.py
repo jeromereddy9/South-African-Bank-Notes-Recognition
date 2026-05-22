@@ -1,9 +1,6 @@
 ﻿"""
 dataloader_temp.py — Temporary dataloader for ResNet-18 training.
 
-Place this file in Data/ and import in ResNet-18_Training.py:
-    from Data.dataloader_temp import BanknoteDataset
-
 OUTPUT PER SAMPLE:
     image_tensor  — torch.Tensor (3, 224, 224) float32 [0, 1]
     label         — int  0=R10  1=R20  2=R50  3=R100  4=R200

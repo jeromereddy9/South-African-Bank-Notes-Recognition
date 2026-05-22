@@ -120,7 +120,7 @@ def save_training_curves(history, save_path):
 
 def train(dataset, config: dict = None):
     """
-    Two-phase training with all improvements:
+    Two-phase training:
 
     Phase 1 — frozen backbone (5 epochs):
         Warms up the new two-layer head with label smoothing loss.
@@ -169,7 +169,7 @@ def train(dataset, config: dict = None):
     history       = {"train_loss":[], "val_loss":[], "train_acc":[], "val_acc":[]}
 
 
-    # PHASE 1 — head warmup
+    # PHASE 1 - head warmup
     print(f"--- Phase 1: Head warmup ({cfg['freeze_epochs']} epochs) ---")
     optimiser = optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
@@ -199,7 +199,7 @@ def train(dataset, config: dict = None):
             print(f"  -> Best model saved (val_acc={best_val_acc*100:.1f}%  val_loss={best_val_loss:.4f})")
 
 
-    # PHASE 2 — full fine-tuning with cosine annealing
+    # PHASE 2 - full fine-tuning with cosine annealing
     remaining = cfg["total_epochs"] - cfg["freeze_epochs"]
     if remaining > 0:
         print(f"\n--- Phase 2: Full fine-tuning ({remaining} epochs) ---")

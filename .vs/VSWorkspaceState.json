@@ -6,6 +6,6 @@
     "\\South-African-Bank-Notes-Recognition\\Dataset",
     "\\South-African-Bank-Notes-Recognition\\Models"
   ],
-  "SelectedNode": "\\South-African-Bank-Notes-Recognition\\Models\\ResNet-18.py",
+  "SelectedNode": "\\South-African-Bank-Notes-Recognition\\Data\\dataloader_temp.py",
   "PreviewInSolutionExplorer": false
 }
