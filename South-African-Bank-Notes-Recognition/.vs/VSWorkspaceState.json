@@ -2,9 +2,8 @@
   "ExpandedNodes": [
     "",
     "\\Data",
-    "\\Models",
-    "\\Results"
+    "\\Models"
   ],
-  "SelectedNode": "\\Models\\SimCLR_Training.py",
+  "SelectedNode": "\\Models\\SimCLR.py",
   "PreviewInSolutionExplorer": false
 }

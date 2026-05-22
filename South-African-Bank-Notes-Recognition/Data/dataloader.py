@@ -1,178 +1,245 @@
-import os
-import torch
-from torch.utils.data import Dataset, DataLoader
+import os, re, random, sys
 import cv2
 import numpy as np
-from data.preprocessing import preprocessing_global, preprocessing_CLAHE
-from data.segmentation import segment_note, segment_note_simple
-from data.augmentation import get_augmented_view
+import torch
+from torch.utils.data import Dataset
+
+_HERE         = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_HERE)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+from Data.preprocessing import apply_gaussian_smoothing, equalize_clahe
+
+DENOMINATION_TO_LABEL = {"R10":0, "R20":1, "R50":2, "R100":3, "R200":4}
+LABEL_TO_DENOMINATION = {v: k for k, v in DENOMINATION_TO_LABEL.items()}
+FILENAME_PATTERN      = re.compile(
+    r'^(R\d{2,3})_(Front|Back)_\d{1,3}_\d{4}\.png$', re.IGNORECASE
+)
+IMAGE_SIZE = (224, 224)
 
 
 class BanknoteDataset(Dataset):
-    
-    def __init__(self, image_paths, labels, is_training=True, 
-                 use_clahe=False, use_robust_segmentation=True):
-        
-        self.image_paths = image_paths
-        self.labels = labels
-        self.is_training = is_training
-        self.use_clahe = use_clahe
-        self.use_robust_segmentation = use_robust_segmentation
-        
-        # Output size 
-        self.output_size = (224, 224)  # ResNet expects 224x224
-    
+
+    def __init__(self, root: str, augment: bool = False, colour: bool = True):
+        self.root    = root
+        self.augment = augment
+        self.colour  = colour
+        self.samples = []
+        self._scan_folder()
+        if not self.samples:
+            raise RuntimeError(f"No valid images found in '{root}'.")
+        print(f"BanknoteDataset: found {len(self.samples)} images in '{root}'")
+        self._print_class_counts()
+
+    def _scan_folder(self):
+        if not os.path.isdir(self.root):
+            raise FileNotFoundError(f"Dataset folder not found: '{self.root}'")
+        for fn in sorted(os.listdir(self.root)):
+            m = FILENAME_PATTERN.match(fn)
+            if not m:
+                continue
+            denom = m.group(1).upper()
+            if denom not in DENOMINATION_TO_LABEL:
+                continue
+            self.samples.append((os.path.join(self.root, fn),
+                                  DENOMINATION_TO_LABEL[denom]))
+
+    def _print_class_counts(self):
+        counts = {k: 0 for k in DENOMINATION_TO_LABEL}
+        for _, l in self.samples:
+            counts[LABEL_TO_DENOMINATION[l]] += 1
+        print("  Class distribution:")
+        for d, c in counts.items():
+            print(f"    {d}: {c} images")
+
     def __len__(self):
-        return len(self.image_paths)
-    
-    def __getitem__(self, idx):
-      
-        # Load image
-        image_path = self.image_paths[idx]
-        image = cv2.imread(image_path)
+        return len(self.samples)
+
+    def __getitem__(self, index):
+        filepath, label = self.samples[index]
         
-        if image is None:
-            raise ValueError(f"Could not load image: {image_path}")
-        
-        # Convert to grayscale
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image.copy()
-        
+        # Get denomination for class-specific augmentation
+        denom = LABEL_TO_DENOMINATION[label]
+
+        # Load 
+        bgr = cv2.imread(filepath, cv2.IMREAD_COLOR)
+        if bgr is None:
+            raise IOError(f"Could not load: {filepath}")
+
         # Preprocessing
-        if self.use_clahe:
-            gray = preprocessing_CLAHE(gray)
+        bgr = self._apply_preprocessing(bgr)
+
+        # Apply augmentations (only during training)
+        if self.augment:
+            # Colour jitter (brightness/contrast)
+            bgr = self._colour_jitter(bgr)
+            
+            # Extra augmentation for R50 (problematic class)
+            if denom == "R50" and random.random() < 0.5:
+                bgr = self._strong_augmentation(bgr)
+
+        # Background compositing 
+        if self.augment and self.colour and random.random() < 0.7:
+            rgb_tmp = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+            rgb_tmp = self._apply_background(rgb_tmp)
+            bgr     = cv2.cvtColor(rgb_tmp, cv2.COLOR_RGB2BGR)
+
+        # Convert to output colour space
+        if self.colour:
+            image = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
         else:
-            gray = preprocessing_global(gray)
+            image = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+
+        # Perspective warp
+        if self.augment and random.random() < 0.5:
+            image = self._perspective_warp(image)
+
+        # Rotation + scale augmentation 
+        if self.augment:
+            image = self._augment_rotation_scale(image)
+
+        # Gaussian noise 
+        if self.augment and random.random() < 0.4:
+            image = self._add_gaussian_noise(image)
         
-        # Segmentation 
-        if self.use_robust_segmentation:
-            note = segment_note(gray, use_clahe=self.use_clahe)
-           
-            if note is None or note.size == 0:
-                note = segment_note_simple(gray, use_clahe=self.use_clahe)
+        # Extra noise for R50 (helps with discrimination)
+        if self.augment and denom == "R50" and random.random() < 0.3:
+            image = self._add_gaussian_noise(image)
+
+        # Resize → tensor [0, 1] 
+        image        = cv2.resize(image, IMAGE_SIZE, interpolation=cv2.INTER_LINEAR)
+        image        = image.astype(np.float32) / 255.0
+
+        if self.colour:
+            image_tensor = torch.from_numpy(image).permute(2, 0, 1)
         else:
-            note = segment_note_simple(gray, use_clahe=self.use_clahe)
+            image_tensor = torch.from_numpy(image).unsqueeze(0)
+
+        return image_tensor, label
+
+    
+    def _apply_preprocessing(self, bgr):
+        """Apply CLAHE preprocessing on V channel."""
+        hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+        h, s, v = cv2.split(hsv)
+        v = apply_gaussian_smoothing(v, kernel_size=3)
+        v = equalize_clahe(v, clip_limit=2.0, grid_size=(8, 8))
+        return cv2.cvtColor(cv2.merge([h, s, v]), cv2.COLOR_HSV2BGR)
+
+    
+    def _colour_jitter(self, bgr: np.ndarray) -> np.ndarray:
+        """Adjust brightness and contrast only (preserves colour info)."""
+        alpha = random.uniform(0.7, 1.3)   # contrast
+        beta  = random.randint(-30, 30)    # brightness
+        return cv2.convertScaleAbs(bgr, alpha=alpha, beta=beta)
+
+    
+    def _strong_augmentation(self, bgr: np.ndarray) -> np.ndarray:
+        """Stronger augmentation for problematic classes (R50)."""
+        # More aggressive brightness/contrast
+        alpha = random.uniform(0.5, 1.5)
+        beta = random.randint(-50, 50)
+        bgr = cv2.convertScaleAbs(bgr, alpha=alpha, beta=beta)
         
-        if note is None or note.size == 0:
-  
-            note = gray
+        # Add slight blur sometimes
+        if random.random() < 0.5:
+            kernel = random.choice([3, 5])
+            bgr = cv2.GaussianBlur(bgr, (kernel, kernel), 0)
         
-        # Resize to fixed size
-        note = cv2.resize(note, self.output_size)
-        
-        # Augmentation (training only)
-        if self.is_training:
-            note = get_augmented_view(note)
-        
-        # Convert to tensor and normalize to [0, 1]
-        note_tensor = torch.from_numpy(note).float().unsqueeze(0) / 255.0  # (1, H, W)
-        
-        # Label tensor
-        label_tensor = torch.tensor(self.labels[idx], dtype=torch.long)
-        
-        return note_tensor, label_tensor
+        return bgr
+
+    
+    def _perspective_warp(self, image: np.ndarray) -> np.ndarray:
+        """Random perspective transform simulating camera angle variation."""
+        h, w  = image.shape[:2]
+        margin = int(min(h, w) * 0.08)
+        src   = np.float32([[0, 0], [w, 0], [w, h], [0, h]])
+        dst   = np.float32([
+            [random.randint(0, margin),        random.randint(0, margin)],
+            [random.randint(w-margin, w),      random.randint(0, margin)],
+            [random.randint(w-margin, w),      random.randint(h-margin, h)],
+            [random.randint(0, margin),        random.randint(h-margin, h)],
+        ])
+        M = cv2.getPerspectiveTransform(src, dst)
+        return cv2.warpPerspective(image, M, (w, h))
+
+    
+    def _augment_rotation_scale(self, image: np.ndarray) -> np.ndarray:
+        """Random rotation (0-359°) and scale (0.5-1.5×)."""
+        rotation = random.randint(0, 359)
+        scale    = round(random.uniform(0.5, 1.5), 2)
+        h, w     = image.shape[:2]
+        center   = (w // 2, h // 2)
+        M        = cv2.getRotationMatrix2D(center, rotation, scale)
+        cos, sin = np.abs(M[0, 0]), np.abs(M[0, 1])
+        new_w    = int(h * sin + w * cos)
+        new_h    = int(h * cos + w * sin)
+        M[0, 2] += new_w / 2 - center[0]
+        M[1, 2] += new_h / 2 - center[1]
+        return cv2.warpAffine(image, M, (new_w, new_h))
+
+    
+    def _add_gaussian_noise(self, image: np.ndarray) -> np.ndarray:
+        """Add random Gaussian noise to simulate sensor noise."""
+        sigma = random.uniform(5, 20)
+        noise = np.random.normal(0, sigma, image.shape).astype(np.float32)
+        noisy = image.astype(np.float32) + noise
+        return np.clip(noisy, 0, 255).astype(np.uint8)
+
+    
+    def _apply_background(self, rgb: np.ndarray) -> np.ndarray:
+        """Paste the banknote onto a synthetic background."""
+        h, w    = rgb.shape[:2]
+        bg      = self._generate_background(h, w)
+        gray    = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+        _, mask = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY)
+        kernel  = np.ones((3, 3), np.uint8)
+        mask    = cv2.erode(mask, kernel, iterations=1)
+        mask3   = cv2.merge([mask, mask, mask])
+        return np.where(mask3 == 255, bg, rgb).astype(np.uint8)
+
+    
+    def _generate_background(self, h: int, w: int) -> np.ndarray:
+        """Generate one of four synthetic background types."""
+        t = random.randint(0, 3)
+        if t == 0:
+            # Solid colour
+            return np.full((h, w, 3),
+                           [random.randint(30, 220) for _ in range(3)],
+                           dtype=np.uint8)
+        elif t == 1:
+            # Horizontal gradient
+            c1  = np.array([random.randint(30, 220) for _ in range(3)], np.float32)
+            c2  = np.array([random.randint(30, 220) for _ in range(3)], np.float32)
+            a   = np.linspace(0, 1, w, dtype=np.float32)
+            row = c1[np.newaxis, :] * (1 - a[:, np.newaxis]) + \
+                  c2[np.newaxis, :] * a[:, np.newaxis]
+            return np.tile(row[np.newaxis], (h, 1, 1)).astype(np.uint8)
+        elif t == 2:
+            # Colour noise
+            base  = [random.randint(50, 180) for _ in range(3)]
+            noise = np.random.randint(-40, 40, (h, w, 3), dtype=np.int16)
+            return np.clip(np.array(base, np.int16) + noise, 0, 255).astype(np.uint8)
+        else:
+            # Striped pattern
+            bg  = np.full((h, w, 3),
+                          [random.randint(100, 200) for _ in range(3)],
+                          dtype=np.uint8)
+            lc  = [random.randint(30, 100) for _ in range(3)]
+            sp  = random.randint(15, 40)
+            for y in range(0, h, sp): bg[y, :] = lc
+            for x in range(0, w, sp): bg[:, x] = lc
+            return bg
 
 
-def create_dataloaders(image_paths, labels, batch_size=32, train_split=0.8,
-                       use_clahe=False, use_robust_segmentation=True, 
-                       random_seed=42):
-    
-    # Set random seed for reproducibility
-    np.random.seed(random_seed)
-    
-    # Create list of indices
-    indices = np.arange(len(image_paths))
-    
-    # Shuffle indices
-    np.random.shuffle(indices)
-    
-    # Split
-    split_idx = int(len(indices) * train_split)
-    train_indices = indices[:split_idx]
-    test_indices = indices[split_idx:]
-    
-    # Create datasets
-    train_dataset = BanknoteDataset(
-        [image_paths[i] for i in train_indices],
-        [labels[i] for i in train_indices],
-        is_training=True,
-        use_clahe=use_clahe,
-        use_robust_segmentation=use_robust_segmentation
-    )
-    
-    test_dataset = BanknoteDataset(
-        [image_paths[i] for i in test_indices],
-        [labels[i] for i in test_indices],
-        is_training=False,  
-        use_clahe=use_clahe,
-        use_robust_segmentation=use_robust_segmentation
-    )
-    
-    # Create dataloaders
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-    
-    return train_loader, test_loader, train_indices, test_indices
-
-
-def create_kfold_dataloaders(image_paths, labels, n_folds=5, batch_size=32,
-                             use_clahe=False, use_robust_segmentation=True,
-                             random_seed=42):
-    
-    from sklearn.model_selection import KFold
-    
-    kf = KFold(n_splits=n_folds, shuffle=True, random_state=random_seed)
-    
-    folds = []
-    
-    for train_indices, test_indices in kf.split(image_paths):
-        # Create datasets for this fold
-        train_dataset = BanknoteDataset(
-            [image_paths[i] for i in train_indices],
-            [labels[i] for i in train_indices],
-            is_training=True,
-            use_clahe=use_clahe,
-            use_robust_segmentation=use_robust_segmentation
-        )
-        
-        test_dataset = BanknoteDataset(
-            [image_paths[i] for i in test_indices],
-            [labels[i] for i in test_indices],
-            is_training=False,
-            use_clahe=use_clahe,
-            use_robust_segmentation=use_robust_segmentation
-        )
-        
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-        
-        folds.append((train_loader, test_loader, train_indices, test_indices))
-    
-    return folds
-
-
-
-# Helper function to load dataset
-
-def load_dataset_from_folder(folder_path, label_mapping):
-  
-    image_paths = []
-    labels = []
-    
-    for filename in os.listdir(folder_path):
-        if filename.endswith(('.png', '.jpg', '.jpeg')):
-            # Extract denomination from filename 
-            parts = filename.split('_')
-            if len(parts) >= 1:
-                denom_str = parts[0]  
-                
-                # Convert denomination to label
-                for pattern, label in label_mapping.items():
-                    if denom_str == pattern:
-                        image_paths.append(os.path.join(folder_path, filename))
-                        labels.append(label)
-                        break
-    
-    return image_paths, labels
+if __name__ == "__main__":
+    from torch.utils.data import DataLoader
+    root = os.path.join(_PROJECT_ROOT, "Dataset", "raw",
+                        "Banknote_Dataset_(2005-2023)")
+    ds   = BanknoteDataset(root=root, augment=True, colour=True)
+    img, lbl = ds[0]
+    print(f"Shape: {img.shape}  Label: {LABEL_TO_DENOMINATION[lbl]}")
+    loader = DataLoader(ds, batch_size=4, shuffle=True)
+    imgs, lbls = next(iter(loader))
+    print(f"Batch: {imgs.shape}  Labels: {[LABEL_TO_DENOMINATION[l.item()] for l in lbls]}")

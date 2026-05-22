@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-from data.preprocessing import (
-    load_image_in_grayscale,
+from Data.preprocessing import (
+    load_image,
     apply_gaussian_smoothing,
     equalize_histogram,
     equalize_clahe,

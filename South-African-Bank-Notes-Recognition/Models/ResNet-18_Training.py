@@ -1,4 +1,4 @@
-﻿import os, sys, copy
+import os, sys, copy
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -28,19 +28,19 @@ IMAGENET_STD  = [0.229, 0.224, 0.225]
 CONFIG = {
     "dataset_root"   : os.path.join(PROJECT_ROOT, "Dataset", "raw",
                                     "Banknote_Dataset_(2005-2023)"),
-    "val_split"      : 0.2,
+    "val_split"      : 0.3,
     "num_workers"    : 0,
     "pretrained"     : True,
     "freeze_epochs"  : 5,
-    "total_epochs"   : 35,          
+    "total_epochs"   : 100,          
     "lr_head"        : 1e-3,
     "lr_finetune"    : 5e-5,        
-    "batch_size"     : 8,
+    "batch_size"     : 16,
     "weight_decay"   : 1e-4,
-    "label_smoothing": 0.05,       
+    "label_smoothing": 0.1,       
     "checkpoint_dir" : os.path.join(PROJECT_ROOT, "checkpoints"),
     "best_model_name": "resnet18_best.pth",
-    "curve_save_path": os.path.join(PROJECT_ROOT, "training_curves.png"),
+    "curve_save_path": os.path.join(PROJECT_ROOT, "training_curves_ResNet.png"),
 }
 
 
@@ -158,7 +158,7 @@ def train(dataset, config: dict = None):
 
 
     # PHASE 1 - head warmup
-    print(f"--- Phase 1: Head warmup ({cfg['freeze_epochs']} epochs) ---")
+    print(f"Phase 1: Head warmup ({cfg['freeze_epochs']} epochs) ")
     optimiser = optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=cfg["lr_head"], weight_decay=cfg["weight_decay"]
@@ -190,7 +190,7 @@ def train(dataset, config: dict = None):
     # PHASE 2 - full fine-tuning with cosine annealing
     remaining = cfg["total_epochs"] - cfg["freeze_epochs"]
     if remaining > 0:
-        print(f"\n--- Phase 2: Full fine-tuning ({remaining} epochs) ---")
+        print(f"\n Phase 2: Full fine-tuning ({remaining} epochs) ")
         model     = unfreeze_backbone(model)
         optimiser = optim.Adam(
             model.parameters(),
@@ -230,8 +230,7 @@ def train(dataset, config: dict = None):
 
 if __name__ == "__main__":
     from Data.dataloader import BanknoteDataset
-    print("ResNet-18 Improved Training")
-    print("=" * 50)
+    print("ResNet-18")
     print(f"Project root : {PROJECT_ROOT}")
     print(f"Dataset path : {CONFIG['dataset_root']}\n")
     dataset = BanknoteDataset(root=CONFIG["dataset_root"],
