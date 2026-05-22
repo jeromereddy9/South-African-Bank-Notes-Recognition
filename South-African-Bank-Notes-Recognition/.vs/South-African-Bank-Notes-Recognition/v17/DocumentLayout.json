@@ -3,8 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\ResNet-18_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Models\\ResNet-18_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\SimCLR_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Models\\SimCLR_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\evaluate.py||{8B382828-6202-11D1-8870-0000F87579D2}",
@@ -17,10 +17,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Data\\dataloader.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Data\\dataloader.py||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\SimCLR_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Models\\SimCLR_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Data\\preprocessing.py||{8B382828-6202-11D1-8870-0000F87579D2}",
@@ -42,7 +38,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Bookmark",
@@ -70,7 +66,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 0,
               "Title": "SimCLR_Training.py",
               "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\SimCLR_Training.py",
               "RelativeDocumentMoniker": "Models\\SimCLR_Training.py",
@@ -83,19 +79,6 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "ResNet-18_Training.py",
-              "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\ResNet-18_Training.py",
-              "RelativeDocumentMoniker": "Models\\ResNet-18_Training.py",
-              "ToolTip": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\ResNet-18_Training.py",
-              "RelativeToolTip": "Models\\ResNet-18_Training.py",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-20T17:39:33.599Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 1,
               "Title": "evaluate.py",
               "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\evaluate.py",
@@ -104,8 +87,7 @@
               "RelativeToolTip": "evaluate.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-20T17:25:17.968Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-20T17:25:17.968Z"
             },
             {
               "$type": "Document",
@@ -117,8 +99,7 @@
               "RelativeToolTip": "Data\\dataloader.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAJwAAAAhAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-17T16:14:16.632Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-17T16:14:16.632Z"
             },
             {
               "$type": "Document",
@@ -130,12 +111,11 @@
               "RelativeToolTip": "Data\\segmentation.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-17T17:06:13.275Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-17T17:06:13.275Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 4,
               "Title": "preprocessing.py",
               "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Data\\preprocessing.py",
               "RelativeDocumentMoniker": "Data\\preprocessing.py",
@@ -143,12 +123,11 @@
               "RelativeToolTip": "Data\\preprocessing.py",
               "ViewState": "AgIAAA8AAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-13T21:52:00.839Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-13T21:52:00.839Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 5,
               "Title": "augmentation.py",
               "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Data\\augmentation.py",
               "RelativeDocumentMoniker": "Data\\augmentation.py",
@@ -156,12 +135,11 @@
               "RelativeToolTip": "Data\\augmentation.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-14T17:08:02.063Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-14T17:08:02.063Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 6,
               "Title": "South_African_Bank_Notes_Recognition.py",
               "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\South_African_Bank_Notes_Recognition.py",
               "RelativeDocumentMoniker": "South_African_Bank_Notes_Recognition.py",
@@ -169,8 +147,7 @@
               "RelativeToolTip": "South_African_Bank_Notes_Recognition.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-13T20:49:07.852Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-13T20:49:07.852Z"
             }
           ]
         }
