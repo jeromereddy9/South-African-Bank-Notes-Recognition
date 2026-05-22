@@ -1,9 +1,10 @@
 {
   "ExpandedNodes": [
     "",
+    "\\Data",
     "\\Models",
     "\\Results"
   ],
-  "SelectedNode": "\\utils",
+  "SelectedNode": "\\Data\\segmentation.py",
   "PreviewInSolutionExplorer": false
 }
