@@ -82,41 +82,81 @@ def prepare_for_dl(image_rgb):
     return torch.from_numpy(img_norm).float().permute(2, 0, 1).unsqueeze(0).to(DEVICE)
 
 def ensemble_predict(r_res, s_res, f_res):
+    # Initialize scores for all valid CLASS_LABELS
     scores = {label: 0.0 for label in CLASS_LABELS}
-    if r_res and r_res[1] > 20: scores[r_res[0]] += (r_res[1] / 100.0)
-    if s_res and s_res[1] > 20: scores[s_res[0]] += (s_res[1] / 100.0)
-    if f_res and f_res[0] != "Unknown": scores[f_res[0]] += (f_res[1] / 100.0) * 0.3
     
+    # Process ResNet
+    if r_res and r_res[0] in scores and r_res[1] > 20: 
+        scores[r_res[0]] += (r_res[1] / 100.0)
+    
+    # Process SimCLR
+    if s_res and s_res[0] in scores and s_res[1] > 20: 
+        scores[s_res[0]] += (s_res[1] / 100.0)
+    
+    # Process SIFT (Check if label exists in our defined classes)
+    if f_res and f_res[0] in scores: 
+        scores[f_res[0]] += (f_res[1] / 100.0) * 0.3
+    
+    # Find the winner
     winner = max(scores, key=scores.get)
-    return winner if scores[winner] >= 0.5 else "Unknown"
+    
+    # Return Unknown if max score is below threshold
+    if scores[winner] < 0.5:
+        return "Unknown"
+        
+    return winner
 
 # ============================================
 # MAIN GUI
 # ============================================
 st.title("💰 SA Banknote Recognition")
+
+# Load models once
 resnet, (simclr, probe), sift = load_resnet_model(), load_simclr_model(), load_sift_classifier()
 
-uploaded_file = st.file_uploader("Upload Banknote", type=["png", "jpg"])
-if uploaded_file:
-    image = Image.open(uploaded_file).convert('RGB')
+# Unified Input Section
+st.subheader("Choose Input Method")
+tab1, tab2 = st.tabs(["📁 Upload File", "📷 Take Photo"])
+
+image_source = None
+
+with tab1:
+    uploaded_file = st.file_uploader("Upload Banknote", type=["png", "jpg", "jpeg"])
+    if uploaded_file:
+        image_source = uploaded_file
+
+with tab2:
+    camera_file = st.camera_input("Take a photo of the banknote")
+    if camera_file:
+        image_source = camera_file
+
+# Processing Block
+if image_source is not None:
+    image = Image.open(image_source).convert('RGB')
     image_array = np.array(image)
     
-    if st.button("Run Pipeline"):
+    if st.button("🔍 Run Pipeline", type="primary"):
         # 1. Segment
-        seg_bgr = segment_note(cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR))
-        seg_rgb = cv2.cvtColor(seg_bgr, cv2.COLOR_BGR2RGB) if seg_bgr is not None else image_array
-        st.image(seg_rgb, caption="Extracted Banknote")
+        with st.spinner("Segmenting..."):
+            seg_bgr = segment_note(cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR))
+            seg_rgb = cv2.cvtColor(seg_bgr, cv2.COLOR_BGR2RGB) if seg_bgr is not None else image_array
+            st.image(seg_rgb, caption="Extracted Banknote")
 
         # 2. Predict
-        tensor = prepare_for_dl(seg_rgb)
-        with torch.no_grad():
-            r_idx = torch.argmax(resnet(tensor))
-            s_idx = torch.argmax(probe(simclr.get_features(tensor)))
-        
-        r_pred = (CLASS_LABELS[r_idx.item()], 95.0) # Simplified for display
-        s_pred = (CLASS_LABELS[s_idx.item()], 90.0)
-        f_label, f_conf, _ = sift.predict(cv2.cvtColor(seg_rgb, cv2.COLOR_RGB2GRAY))
-        f_pred = (f_label, f_conf * 100)
-        
-        final = ensemble_predict(r_pred, s_pred, f_pred)
-        st.success(f"### Prediction: {final}")
+        with st.spinner("Classifying..."):
+            tensor = prepare_for_dl(seg_rgb)
+            with torch.no_grad():
+                r_idx = torch.argmax(resnet(tensor))
+                s_idx = torch.argmax(probe(simclr.get_features(tensor)))
+            
+            r_pred = (CLASS_LABELS[r_idx.item()], 95.0) 
+            s_pred = (CLASS_LABELS[s_idx.item()], 90.0)
+            f_label, f_conf, _ = sift.predict(cv2.cvtColor(seg_rgb, cv2.COLOR_RGB2GRAY))
+            f_pred = (f_label, f_conf * 100)
+            
+            final = ensemble_predict(r_pred, s_pred, f_pred)
+            
+            if final == "Unknown":
+                st.warning(f"### Prediction: {final}")
+            else:
+                st.success(f"### Prediction: {final}")
