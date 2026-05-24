@@ -2,8 +2,10 @@
   "ExpandedNodes": [
     "",
     "\\Data",
-    "\\Models"
+    "\\Dataset",
+    "\\Models",
+    "\\utils"
   ],
-  "SelectedNode": "\\Models\\SimCLR.py",
+  "SelectedNode": "\\South_African_Bank_Notes_Recognition.py",
   "PreviewInSolutionExplorer": false
 }

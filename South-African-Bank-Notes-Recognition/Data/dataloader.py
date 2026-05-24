@@ -9,7 +9,8 @@ _PROJECT_ROOT = os.path.dirname(_HERE)
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from Data.preprocessing import apply_gaussian_smoothing, equalize_clahe
+# We keep this for the CLAHE enhancement applied to the already segmented images
+from Data.preprocessing import preprocessing_CLAHE
 
 DENOMINATION_TO_LABEL = {"R10":0, "R20":1, "R50":2, "R100":3, "R200":4}
 LABEL_TO_DENOMINATION = {v: k for k, v in DENOMINATION_TO_LABEL.items()}
@@ -29,7 +30,7 @@ class BanknoteDataset(Dataset):
         self._scan_folder()
         if not self.samples:
             raise RuntimeError(f"No valid images found in '{root}'.")
-        print(f"BanknoteDataset: found {len(self.samples)} images in '{root}'")
+        print(f"BanknoteDataset: loaded {len(self.samples)} pre-segmented images from '{root}'")
         self._print_class_counts()
 
     def _scan_folder(self):
@@ -37,11 +38,9 @@ class BanknoteDataset(Dataset):
             raise FileNotFoundError(f"Dataset folder not found: '{self.root}'")
         for fn in sorted(os.listdir(self.root)):
             m = FILENAME_PATTERN.match(fn)
-            if not m:
-                continue
+            if not m: continue
             denom = m.group(1).upper()
-            if denom not in DENOMINATION_TO_LABEL:
-                continue
+            if denom not in DENOMINATION_TO_LABEL: continue
             self.samples.append((os.path.join(self.root, fn),
                                   DENOMINATION_TO_LABEL[denom]))
 
@@ -58,58 +57,44 @@ class BanknoteDataset(Dataset):
 
     def __getitem__(self, index):
         filepath, label = self.samples[index]
-        
-        # Get denomination for class-specific augmentation
-        denom = LABEL_TO_DENOMINATION[label]
 
-        # Load 
+        # 1. DIRECT LOAD: Images are already segmented offline.
         bgr = cv2.imread(filepath, cv2.IMREAD_COLOR)
         if bgr is None:
-            raise IOError(f"Could not load: {filepath}")
+            raise IOError(f"Could not load pre-segmented image: {filepath}")
 
-        # Preprocessing
-        bgr = self._apply_preprocessing(bgr)
+        # 2. COLOR-PRESERVING ENHANCEMENT: Apply CLAHE to the pre-segmented image.
+        bgr = preprocessing_CLAHE(bgr)
 
-        # Apply augmentations (only during training)
+        # 3. AUGMENTATIONS (Training only)
         if self.augment:
-            # Colour jitter (brightness/contrast)
             bgr = self._colour_jitter(bgr)
-            
-            # Extra augmentation for R50 (problematic class)
-            if denom == "R50" and random.random() < 0.5:
+            if random.random() < 0.2:
                 bgr = self._strong_augmentation(bgr)
 
-        # Background compositing 
+        # 4. BACKGROUND COMPOSITING 
         if self.augment and self.colour and random.random() < 0.7:
             rgb_tmp = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
             rgb_tmp = self._apply_background(rgb_tmp)
             bgr     = cv2.cvtColor(rgb_tmp, cv2.COLOR_RGB2BGR)
 
-        # Convert to output colour space
+        # 5. CONVERSION
         if self.colour:
             image = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
         else:
             image = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
 
-        # Perspective warp
+        # 6. GEOMETRIC AUGMENTATIONS
         if self.augment and random.random() < 0.5:
             image = self._perspective_warp(image)
-
-        # Rotation + scale augmentation 
         if self.augment:
             image = self._augment_rotation_scale(image)
-
-        # Gaussian noise 
         if self.augment and random.random() < 0.4:
             image = self._add_gaussian_noise(image)
-        
-        # Extra noise for R50 (helps with discrimination)
-        if self.augment and denom == "R50" and random.random() < 0.3:
-            image = self._add_gaussian_noise(image)
 
-        # Resize → tensor [0, 1] 
-        image        = cv2.resize(image, IMAGE_SIZE, interpolation=cv2.INTER_LINEAR)
-        image        = image.astype(np.float32) / 255.0
+        # 7. RESIZE & NORMALIZE
+        image = cv2.resize(image, IMAGE_SIZE, interpolation=cv2.INTER_LINEAR)
+        image = image.astype(np.float32) / 255.0
 
         if self.colour:
             image_tensor = torch.from_numpy(image).permute(2, 0, 1)
@@ -118,40 +103,22 @@ class BanknoteDataset(Dataset):
 
         return image_tensor, label
 
-    
-    def _apply_preprocessing(self, bgr):
-        """Apply CLAHE preprocessing on V channel."""
-        hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-        h, s, v = cv2.split(hsv)
-        v = apply_gaussian_smoothing(v, kernel_size=3)
-        v = equalize_clahe(v, clip_limit=2.0, grid_size=(8, 8))
-        return cv2.cvtColor(cv2.merge([h, s, v]), cv2.COLOR_HSV2BGR)
-
-    
+    # ... (Keep all your existing helper methods below this point) ...
     def _colour_jitter(self, bgr: np.ndarray) -> np.ndarray:
-        """Adjust brightness and contrast only (preserves colour info)."""
-        alpha = random.uniform(0.7, 1.3)   # contrast
-        beta  = random.randint(-30, 30)    # brightness
+        alpha = random.uniform(0.7, 1.3)   
+        beta  = random.randint(-30, 30)    
         return cv2.convertScaleAbs(bgr, alpha=alpha, beta=beta)
 
-    
     def _strong_augmentation(self, bgr: np.ndarray) -> np.ndarray:
-        """Stronger augmentation for problematic classes (R50)."""
-        # More aggressive brightness/contrast
         alpha = random.uniform(0.5, 1.5)
         beta = random.randint(-50, 50)
         bgr = cv2.convertScaleAbs(bgr, alpha=alpha, beta=beta)
-        
-        # Add slight blur sometimes
         if random.random() < 0.5:
             kernel = random.choice([3, 5])
             bgr = cv2.GaussianBlur(bgr, (kernel, kernel), 0)
-        
         return bgr
 
-    
     def _perspective_warp(self, image: np.ndarray) -> np.ndarray:
-        """Random perspective transform simulating camera angle variation."""
         h, w  = image.shape[:2]
         margin = int(min(h, w) * 0.08)
         src   = np.float32([[0, 0], [w, 0], [w, h], [0, h]])
@@ -164,9 +131,7 @@ class BanknoteDataset(Dataset):
         M = cv2.getPerspectiveTransform(src, dst)
         return cv2.warpPerspective(image, M, (w, h))
 
-    
     def _augment_rotation_scale(self, image: np.ndarray) -> np.ndarray:
-        """Random rotation (0-359°) and scale (0.5-1.5×)."""
         rotation = random.randint(0, 359)
         scale    = round(random.uniform(0.5, 1.5), 2)
         h, w     = image.shape[:2]
@@ -179,17 +144,13 @@ class BanknoteDataset(Dataset):
         M[1, 2] += new_h / 2 - center[1]
         return cv2.warpAffine(image, M, (new_w, new_h))
 
-    
     def _add_gaussian_noise(self, image: np.ndarray) -> np.ndarray:
-        """Add random Gaussian noise to simulate sensor noise."""
         sigma = random.uniform(5, 20)
         noise = np.random.normal(0, sigma, image.shape).astype(np.float32)
         noisy = image.astype(np.float32) + noise
         return np.clip(noisy, 0, 255).astype(np.uint8)
 
-    
     def _apply_background(self, rgb: np.ndarray) -> np.ndarray:
-        """Paste the banknote onto a synthetic background."""
         h, w    = rgb.shape[:2]
         bg      = self._generate_background(h, w)
         gray    = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
@@ -199,17 +160,13 @@ class BanknoteDataset(Dataset):
         mask3   = cv2.merge([mask, mask, mask])
         return np.where(mask3 == 255, bg, rgb).astype(np.uint8)
 
-    
     def _generate_background(self, h: int, w: int) -> np.ndarray:
-        """Generate one of four synthetic background types."""
         t = random.randint(0, 3)
         if t == 0:
-            # Solid colour
             return np.full((h, w, 3),
                            [random.randint(30, 220) for _ in range(3)],
                            dtype=np.uint8)
         elif t == 1:
-            # Horizontal gradient
             c1  = np.array([random.randint(30, 220) for _ in range(3)], np.float32)
             c2  = np.array([random.randint(30, 220) for _ in range(3)], np.float32)
             a   = np.linspace(0, 1, w, dtype=np.float32)
@@ -217,12 +174,10 @@ class BanknoteDataset(Dataset):
                   c2[np.newaxis, :] * a[:, np.newaxis]
             return np.tile(row[np.newaxis], (h, 1, 1)).astype(np.uint8)
         elif t == 2:
-            # Colour noise
             base  = [random.randint(50, 180) for _ in range(3)]
             noise = np.random.randint(-40, 40, (h, w, 3), dtype=np.int16)
             return np.clip(np.array(base, np.int16) + noise, 0, 255).astype(np.uint8)
         else:
-            # Striped pattern
             bg  = np.full((h, w, 3),
                           [random.randint(100, 200) for _ in range(3)],
                           dtype=np.uint8)
@@ -231,15 +186,3 @@ class BanknoteDataset(Dataset):
             for y in range(0, h, sp): bg[y, :] = lc
             for x in range(0, w, sp): bg[:, x] = lc
             return bg
-
-
-if __name__ == "__main__":
-    from torch.utils.data import DataLoader
-    root = os.path.join(_PROJECT_ROOT, "Dataset", "raw",
-                        "Banknote_Dataset_(2005-2023)")
-    ds   = BanknoteDataset(root=root, augment=True, colour=True)
-    img, lbl = ds[0]
-    print(f"Shape: {img.shape}  Label: {LABEL_TO_DENOMINATION[lbl]}")
-    loader = DataLoader(ds, batch_size=4, shuffle=True)
-    imgs, lbls = next(iter(loader))
-    print(f"Batch: {imgs.shape}  Labels: {[LABEL_TO_DENOMINATION[l.item()] for l in lbls]}")

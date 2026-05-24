@@ -3,24 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\test.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:test.py||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\SIFT_FLANN.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Models\\SIFT_FLANN.py||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\South_African_Bank_Notes_Recognition.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:South_African_Bank_Notes_Recognition.py||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\ResNet-18_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Models\\ResNet-18_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\SimCLR_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Models\\SimCLR_Training.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     }
   ],
   "DocumentGroupContainers": [
@@ -30,7 +14,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 9,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Bookmark",
@@ -58,65 +42,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "SIFT_FLANN.py",
-              "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\SIFT_FLANN.py",
-              "RelativeDocumentMoniker": "Models\\SIFT_FLANN.py",
-              "ToolTip": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\SIFT_FLANN.py",
-              "RelativeToolTip": "Models\\SIFT_FLANN.py",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAALAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-22T21:36:21.335Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "SimCLR_Training.py",
-              "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\SimCLR_Training.py",
-              "RelativeDocumentMoniker": "Models\\SimCLR_Training.py",
-              "ToolTip": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\SimCLR_Training.py",
-              "RelativeToolTip": "Models\\SimCLR_Training.py",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-22T19:14:16.231Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "ResNet-18_Training.py",
-              "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\ResNet-18_Training.py",
-              "RelativeDocumentMoniker": "Models\\ResNet-18_Training.py",
-              "ToolTip": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\Models\\ResNet-18_Training.py",
-              "RelativeToolTip": "Models\\ResNet-18_Training.py",
-              "ViewState": "AgIAAAMAAAAAAAAAAAAAAB4AAAAaAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-22T19:12:44.185Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "test.py",
-              "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\test.py",
-              "RelativeDocumentMoniker": "test.py",
-              "ToolTip": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\test.py",
-              "RelativeToolTip": "test.py",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAA5AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-22T17:22:41.944Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
               "Title": "South_African_Bank_Notes_Recognition.py",
               "DocumentMoniker": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\South_African_Bank_Notes_Recognition.py",
               "RelativeDocumentMoniker": "South_African_Bank_Notes_Recognition.py",
               "ToolTip": "C:\\Users\\jerom\\Documents\\GitHub\\South-African-Bank-Notes-Recognition\\South-African-Bank-Notes-Recognition\\South_African_Bank_Notes_Recognition.py",
               "RelativeToolTip": "South_African_Bank_Notes_Recognition.py",
-              "ViewState": "AgIAABMAAAAAAAAAAAAiwCYAAAAlAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAHkAAAAuAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2026-05-22T16:23:01.387Z",
               "EditorCaption": ""

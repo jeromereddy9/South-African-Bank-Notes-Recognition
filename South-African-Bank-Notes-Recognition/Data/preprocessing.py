@@ -68,3 +68,27 @@ def preprocessing_CLAHE(image):
     smoothed = apply_gaussian_smoothing(image, kernel_size=3)
     enhanced = equalize_clahe(smoothed, clip_limit=2.0, grid_size=(8,8))
     return enhanced
+
+def preprocess_for_model(image_path, segment=True):
+    """
+    Standardized engine for real-time evaluation or training extraction.
+    Loads image -> Isolates banknote -> Returns clean BGR color image.
+    """
+    import cv2
+    from Data.segmentation import segment_note 
+    
+    # 1. Read Image in Color (BGR)
+    img_bgr = cv2.imread(image_path)
+    if img_bgr is None:
+        raise ValueError(f"Could not read image path: {image_path}")
+        
+    # 2. Dynamic Structural Isolation
+    if segment:
+        img_processed = segment_note(img_bgr)
+        # Safety fallback: If GrabCut totally fails, use the original image
+        if img_processed is None:
+            img_processed = img_bgr
+    else:
+        img_processed = img_bgr
+        
+    return img_processed
