@@ -92,3 +92,33 @@ def preprocess_for_model(image_path, segment=True):
         img_processed = img_bgr
         
     return img_processed
+
+def enhance_resolution(image, target_width=640):
+    """
+    Checks if the segmented banknote is too small. 
+    If it is, it upscales it and applies a sharpening filter to restore edge data.
+    """
+    if image is None:
+        return None
+        
+    h, w = image.shape[:2]
+    
+    # If the image is smaller than our target width (e.g., it was far away)
+    if w < target_width:
+        # 1. Upscale using CUBIC interpolation (best for adding artificial pixels)
+        scale = target_width / w
+        new_h = int(h * scale)
+        upscaled = cv2.resize(image, (target_width, new_h), interpolation=cv2.INTER_CUBIC)
+        
+        # 2. Apply a Sharpening Kernel (Unsharp Masking)
+        # This pushes edge contrast up, which SIFT and CNNs love.
+        kernel = np.array([[ 0, -1,  0],
+                           [-1,  5, -1],
+                           [ 0, -1,  0]])
+        
+        sharpened = cv2.filter2D(upscaled, -1, kernel)
+        
+        return sharpened
+        
+    # If the image is already large enough, just return it as-is
+    return image

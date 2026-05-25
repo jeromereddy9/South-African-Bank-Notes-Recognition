@@ -13,7 +13,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Imports
-from Data.preprocessing import preprocessing_CLAHE
+from Data.preprocessing import preprocessing_CLAHE, enhance_resolution
 from Data.segmentation import segment_note
 from Models.SimCLR import get_simclr_model, get_linear_probe
 from Models.SIFT_FLANN import SIFTFLANNClassifier
@@ -136,11 +136,19 @@ if image_source is not None:
     image_array = np.array(image)
     
     if st.button("🔍 Run Pipeline", type="primary"):
-        # 1. Segment
-        with st.spinner("Segmenting..."):
-            seg_bgr = segment_note(cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR))
+        # 1. Segment & Enhance
+        with st.spinner("Segmenting and Enhancing..."):
+            raw_bgr = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+            seg_bgr = segment_note(raw_bgr)
+            
+            # --- APPLY DISTANCE FIX HERE ---
+            if seg_bgr is not None:
+                seg_bgr = enhance_resolution(seg_bgr, target_width=640)
+                
             seg_rgb = cv2.cvtColor(seg_bgr, cv2.COLOR_BGR2RGB) if seg_bgr is not None else image_array
-            st.image(seg_rgb, caption="Extracted Banknote")
+            
+            # Show the user the fixed image
+            st.image(seg_rgb, caption="Extracted & Enhanced Banknote")
 
         # 2. Predict
         with st.spinner("Classifying..."):
