@@ -1,0 +1,104 @@
+import cv2
+import numpy as np
+from Data.preprocessing import preprocessing_CLAHE, enhance_resolution
+
+def segment_note(image):
+    """
+    Complete, consolidated segmentation pipeline.
+    """
+    if image is None: return None
+
+    # 1. Relaxed Region Isolation
+    masked_note = _get_relaxed_region(image)
+    
+    # 2. Edge-Based Refinement
+    prep_img = preprocessing_CLAHE(masked_note)
+    candidate = _find_best_contour(prep_img)
+    
+    # Fallback to original image if contouring fails
+    if candidate is None:
+        return image 
+
+    # 3. Perspective Warp with padding to prevent edge clipping
+    corners = _get_true_corners(candidate)
+    warped = _apply_perspective_with_padding(image, corners, padding=15)
+    
+    # 4. Enhance resolution
+    enhanced = enhance_resolution(warped, target_width=640)
+    
+    # 5. Letterboxing: Fixes the squashing issue by preserving aspect ratio
+    return _resize_and_pad(enhanced, target_size=(640, 330))
+
+def _get_relaxed_region(image):
+    h, w = image.shape[:2]
+    mask = np.zeros(image.shape[:2], np.uint8)
+    
+    # Relaxed ROI: Capture 95% of the image to ensure the note is inside
+    margin = int(min(h, w) * 0.05)
+    rect = (margin, margin, w - 2*margin, h - 2*margin)
+    
+    bgdModel = np.zeros((1, 65), np.float64)
+    fgdModel = np.zeros((1, 65), np.float64)
+
+    cv2.grabCut(image, mask, rect, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_RECT)
+    
+    mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+    # Use closing to fill holes without shrinking the exterior dimensions
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
+    mask2 = cv2.morphologyEx(mask2, cv2.MORPH_CLOSE, kernel)
+    
+    return image * mask2[:, :, np.newaxis]
+
+def _find_best_contour(masked_gray_img):
+    gray = cv2.cvtColor(masked_gray_img, cv2.COLOR_BGR2GRAY) if len(masked_gray_img.shape) == 3 else masked_gray_img
+    edges = cv2.Canny(gray, 50, 150)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return max(contours, key=cv2.contourArea) if contours else None
+
+def _get_true_corners(contour):
+    """Fit a 4-point polygon to the contour."""
+    peri = cv2.arcLength(contour, True)
+    for epsilon in np.linspace(0.01, 0.1, 10):
+        approx = cv2.approxPolyDP(contour, epsilon * peri, True)
+        if len(approx) == 4:
+            return approx.reshape(4, 2)
+    return cv2.boxPoints(cv2.minAreaRect(contour)).astype(np.int32)
+
+def _apply_perspective_with_padding(image, corners, padding=15):
+    # Order points
+    rect = np.zeros((4, 2), dtype="float32")
+    s = corners.sum(axis=1)
+    rect[0] = corners[np.argmin(s)]; rect[2] = corners[np.argmax(s)]
+    diff = np.diff(corners, axis=1)
+    rect[1] = corners[np.argmin(diff)]; rect[3] = corners[np.argmax(diff)]
+    
+    (tl, tr, br, bl) = rect
+    width = int(max(np.linalg.norm(br - bl), np.linalg.norm(tr - tl)))
+    height = int(max(np.linalg.norm(tr - br), np.linalg.norm(tl - bl)))
+    
+    dst = np.array([[padding, padding], [width-padding, padding], 
+                    [width-padding, height-padding], [padding, height-padding]], dtype="float32")
+    
+    M = cv2.getPerspectiveTransform(rect, dst)
+    return cv2.warpPerspective(image, M, (width, height))
+
+def _resize_and_pad(image, target_size=(640, 330)):
+    """
+    Fits the banknote into the target size using Letterboxing.
+    Maintains aspect ratio and pads the rest with black pixels.
+    """
+    h, w = image.shape[:2]
+    target_w, target_h = target_size
+    
+    # Calculate scale to fit
+    scale = min(target_w / w, target_h / h)
+    new_w, new_h = int(w * scale), int(h * scale)
+    
+    resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+    
+    canvas = np.zeros((target_h, target_w, 3), dtype=np.uint8)
+    x_offset = (target_w - new_w) // 2
+    y_offset = (target_h - new_h) // 2
+    
+    canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
+    return canvas

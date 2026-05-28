@@ -31,11 +31,11 @@ IMAGENET_MEAN = np.array([0.485, 0.456, 0.406])
 IMAGENET_STD = np.array([0.229, 0.224, 0.225])
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-#Page Config
-st.set_page_config(page_title="SA Banknote Recognition", page_icon="$", layout="wide")
 
-# Model loading
-@st.cache_resource
+
+
+# Model Loading
+
 def load_resnet_model():
     path = os.path.join(PROJECT_ROOT, "checkpoints", "resnet18_best.pth")
     checkpoint = torch.load(path, map_location=DEVICE)
@@ -44,7 +44,7 @@ def load_resnet_model():
     model.to(DEVICE).eval()
     return model
 
-@st.cache_resource
+
 def load_simclr_model():
     path = os.path.join(PROJECT_ROOT, "checkpoints", "simclr_best.pth")
     checkpoint = torch.load(path, map_location=DEVICE)
@@ -56,7 +56,7 @@ def load_simclr_model():
     probe.to(DEVICE).eval()
     return model, probe
 
-@st.cache_resource
+
 def load_sift_classifier():
     # Load from the pre-segmented dataset folder for max consistency
     ref_dir = os.path.join(PROJECT_ROOT, "Dataset", "segmented")
@@ -69,7 +69,7 @@ def load_sift_classifier():
                 clf.fit(img, denom)
     return clf
 
-# Pipeline and Classification
+
 def prepare_for_dl(image_rgb):
     resized = cv2.resize(image_rgb, (224, 224))
     img_norm = ((resized.astype(np.float32) / 255.0) - IMAGENET_MEAN) / IMAGENET_STD
@@ -87,7 +87,7 @@ def ensemble_predict(r_res, s_res, f_res):
     if s_res and s_res[0] in scores and s_res[1] > 20: 
         scores[s_res[0]] += (s_res[1] / 100.0)
     
-    # Process SIFT 
+    # Process SIFT (Check if label exists in our defined classes)
     if f_res and f_res[0] in scores: 
         scores[f_res[0]] += (f_res[1] / 100.0) * 0.3
     
@@ -95,77 +95,99 @@ def ensemble_predict(r_res, s_res, f_res):
     winner = max(scores, key=scores.get)
     
     # Return Unknown if max score is below threshold
-    if scores[winner] <= 0:
+    if scores[winner] < 0.5:
         return "Unknown"
         
     return winner
 
-#Main GUI
-st.title("SA Banknote Recognition")
-
-# Load models once
-resnet, (simclr, probe), sift = load_resnet_model(), load_simclr_model(), load_sift_classifier()
-
-# Unified Input Section
-st.subheader("Choose Input Method")
-tab1, tab2 = st.tabs(["Upload File", "Take Photo"])
-
-image_source = None
-
-with tab1:
-    uploaded_file = st.file_uploader("Upload Banknote", type=["png", "jpg", "jpeg"])
-    if uploaded_file:
-        image_source = uploaded_file
-
-with tab2:
-    camera_file = st.camera_input("Take a photo of the banknote")
-    if camera_file:
-        image_source = camera_file
-
-# Processing Block
-if image_source is not None:
-    image = Image.open(image_source).convert('RGB')
-    image_array = np.array(image)
+def get_predictions(model_resnet, model_simclr, probe_simclr, clf_sift, image_bgr):
+  
+    # 1. Segment 
+    seg_bgr = segment_note(image_bgr)
+    if seg_bgr is None: return None, None, None
     
-    if st.button("Run Pipeline", type="primary"):
-        # 1. Segment & Enhance
-        with st.spinner("Thinking..."):
-            raw_bgr = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
-            seg_bgr = segment_note(raw_bgr)
-            
-            #Enhance Segmented Image
-            if seg_bgr is not None:
-                seg_bgr = enhance_resolution(seg_bgr, target_width=640)
-                
-            seg_rgb = cv2.cvtColor(seg_bgr, cv2.COLOR_BGR2RGB) if seg_bgr is not None else image_array           
+    # 2. Enhance 
+    seg_bgr = enhance_resolution(seg_bgr, target_width=640)
+    
+    # 3. Convert to RGB for model input
+    seg_rgb = cv2.cvtColor(seg_bgr, cv2.COLOR_BGR2RGB)
+    
+    # 4. Prepare for DL 
+    dl_input = prepare_for_dl(seg_rgb)
+    
+    # Model Inference
+    
+    # ResNet
+    with torch.no_grad():
+        out = model_resnet(dl_input)
+        prob = torch.nn.functional.softmax(out, dim=1)
+        r_conf, r_idx = torch.max(prob, 1)
+        r_res = (CLASS_LABELS[r_idx.item()], r_conf.item() * 100)
+        
+    # SimCLR
+    with torch.no_grad():
+        feat = model_simclr.get_features(dl_input) 
+        out = probe_simclr(feat)
+        prob = torch.nn.functional.softmax(out, dim=1)
+        s_conf, s_idx = torch.max(prob, 1)
+        s_res = (CLASS_LABELS[s_idx.item()], s_conf.item() * 100)
+        
+    # SIFT 
+    sift_gray = cv2.cvtColor(seg_rgb, cv2.COLOR_RGB2GRAY)
+    f_label, f_conf, _ = clf_sift.predict(sift_gray)
+    f_res = (f_label, f_conf * 100)
+    
+    return r_res, s_res, f_res
 
+def run_evaluation(test_dir):
+    # Initialize Models
+    resnet = load_resnet_model()
+    simclr, probe = load_simclr_model()
+    sift = load_sift_classifier()
+    
+    results = {"ResNet": 0, "SimCLR": 0, "SIFT": 0, "Ensemble": 0, "Total": 0}
+    
+    files = [f for f in os.listdir(test_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
+    
+    if not files:
+        print(f"ERROR: No images found in {test_dir}")
+        return
+
+    for f in files:
+        # 1. Extract the True Label from the filename 
+        true_label = f.split('_')[0].upper()
+        
+        # Skip if the label isn't in defined CLASS_LABELS
+        if true_label not in CLASS_LABELS:
+            print(f"Skipping {f}: label '{true_label}' not in CLASS_LABELS")
+            continue
+
+        img_path = os.path.join(test_dir, f)
+        img = cv2.imread(img_path)
+        if img is None: continue
+        
         # 2. Predict
-        with st.spinner("Classifying..."):
-            tensor = prepare_for_dl(seg_rgb)
-            with torch.no_grad():
-                # Get ResNet Probabilities
-                r_out = resnet(tensor)
-                r_probs = torch.softmax(r_out, dim=1)
-                r_conf, r_idx = torch.max(r_probs, dim=1)
-                
-                # Get SimCLR Probabilities
-                s_out = probe(simclr.get_features(tensor))
-                s_probs = torch.softmax(s_out, dim=1)
-                s_conf, s_idx = torch.max(s_probs, dim=1)
-            
-            # Pack as (Label, Percentage)
-            r_pred = (CLASS_LABELS[r_idx.item()], r_conf.item() * 100) 
-            s_pred = (CLASS_LABELS[s_idx.item()], s_conf.item() * 100)
-            
-            # SIFT Prediction
-            f_label, f_conf, _ = sift.predict(cv2.cvtColor(seg_rgb, cv2.COLOR_RGB2GRAY))
-            f_pred = (f_label, f_conf * 100)
-            
-            # Ensemble
-            final = ensemble_predict(r_pred, s_pred, f_pred)
-            
-            
-            if final == "Unknown":
-                st.warning(f"### Prediction: {final}")
-            else:
-                st.success(f"### Prediction: {final}")
+        r_res, s_res, f_res = get_predictions(resnet, simclr, probe, sift, img)
+        if r_res is None: continue
+        
+        # 3. Tally
+        results["Total"] += 1
+        if r_res[0] == true_label: results["ResNet"] += 1
+        if s_res[0] == true_label: results["SimCLR"] += 1
+        if f_res and f_res[0] == true_label: results["SIFT"] += 1
+        
+        ensemble_choice = ensemble_predict(r_res, s_res, f_res)
+        if ensemble_choice == true_label: results["Ensemble"] += 1
+
+    # Report
+    if results["Total"] > 0:
+        print("--- Results ---")
+        for model, count in results.items():
+            if model == "Total": continue
+            acc = (count / results["Total"]) * 100
+            print(f"{model} Accuracy: {acc:.2f}% ({count}/{results['Total']})")
+    else:
+        print("Evaluation finished with 0 images processed.")
+
+if __name__ == "__main__":
+    run_evaluation("Dataset/test") 

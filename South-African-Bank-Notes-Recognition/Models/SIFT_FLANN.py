@@ -1,8 +1,3 @@
-"""
-SIFT-FLANN Classifier for Banknote Recognition
-Enhanced version with comprehensive documentation
-"""
-
 import cv2
 import numpy as np
 import sys
@@ -22,34 +17,14 @@ from Data.Feature_matching import (
 
 
 class SIFTFLANNClassifier:
-    """
-    SIFT + FLANN based image classifier for banknote recognition.
-    
-    Uses Scale-Invariant Feature Transform (SIFT) for keypoint detection
-    and Fast Library for Approximate Nearest Neighbors (FLANN) for matching.
-    
-    Key features:
-    - Rotation, scale, and illumination invariant
-    - RANSAC-based homography verification
-    - Confidence scoring via inlier ratio
-    """
-
+   
     def __init__(self,
                  ratio_threshold: float = 0.75,
                  min_match_count: int = 10,
                  inlier_threshold: float = 0.25,
                  sift_params: dict | None = None,
                  flann_params: dict | None = None):
-        """
-        Initialize SIFT-FLANN classifier.
-        
-        Args:
-            ratio_threshold: Lowe's ratio test threshold (0.7-0.8 typical)
-            min_match_count: Minimum good matches required
-            inlier_threshold: Minimum inlier ratio for accepting a match
-            sift_params: Custom SIFT parameters (optional)
-            flann_params: Custom FLANN parameters (optional)
-        """
+       
         self.ratio_threshold = ratio_threshold
         self.min_match_count = min_match_count
         self.inlier_threshold = inlier_threshold
@@ -75,16 +50,7 @@ class SIFTFLANNClassifier:
         self._database: list[dict] = []
 
     def _to_grayscale(self, image: np.ndarray) -> np.ndarray:
-        """
-        Convert RGB image to grayscale if needed.
-        SIFT expects single-channel grayscale images.
         
-        Args:
-            image: Input image (can be RGB or grayscale)
-        
-        Returns:
-            Grayscale image
-        """
         if image is None:
             return None
         
@@ -96,19 +62,7 @@ class SIFTFLANNClassifier:
         return image
     
     def fit(self, image: np.ndarray, label: str) -> "SIFTFLANNClassifier":
-        """
-        Add a reference image to the database.
-        
-        Args:
-            image: Reference image (RGB or grayscale)
-            label: Class label (e.g., "R10", "R20")
-        
-        Returns:
-            self (for method chaining)
-        
-        Raises:
-            ValueError: If image is None or no keypoints detected
-        """
+       
         if image is None:
             raise ValueError(f"fit(): image for label '{label}' is None.")
 
@@ -135,18 +89,7 @@ class SIFTFLANNClassifier:
 
     def fit_with_rotations(self, image: np.ndarray, label: str, 
                           angles=[0, 90, 180, 270]) -> "SIFTFLANNClassifier":
-        """
-        Add the same image with multiple rotations for better invariance.
-        Useful for banknotes that may be scanned in different orientations.
-        
-        Args:
-            image: Reference image (RGB or grayscale)
-            label: Class label
-            angles: List of rotation angles to add (default: 0, 90, 180, 270)
-        
-        Returns:
-            self (for method chaining)
-        """
+       
         # Convert to grayscale
         gray = self._to_grayscale(image)
         
@@ -166,22 +109,7 @@ class SIFTFLANNClassifier:
         return self
 
     def predict(self, query_image: np.ndarray) -> tuple[str, float, dict]:
-        """
-        Predict the class label for a query image.
-        
-        Args:
-            query_image: Query image to classify (RGB or grayscale)
-        
-        Returns:
-            Tuple of (label, confidence, details)
-            - label: Predicted class label or "unknown"
-            - confidence: Inlier ratio score (0.0 to 1.0)
-            - details: Dict with match details for visualization
-        
-        Raises:
-            RuntimeError: If database is empty
-            ValueError: If query_image is None
-        """
+       
         if not self._database:
             raise RuntimeError(
                 "predict(): no reference images have been fitted yet. "
@@ -244,20 +172,7 @@ class SIFTFLANNClassifier:
         return best_label, best_score, best_detail
 
     def predict_all(self, query_image: np.ndarray) -> list[dict]:
-        """
-        Get match scores for all references in the database.
-        Useful for debugging and understanding model behavior.
         
-        Args:
-            query_image: Query image to classify
-        
-        Returns:
-            List of dicts with match scores for each reference,
-            sorted by inlier_ratio (best first)
-        
-        Raises:
-            RuntimeError: If database is empty
-        """
         if not self._database:
             raise RuntimeError("predict_all(): database is empty. Call fit() first.")
 
@@ -297,19 +212,7 @@ class SIFTFLANNClassifier:
 
     def visualise_prediction(self, query_image: np.ndarray,
                             output_path: str | None = None) -> np.ndarray:
-        """
-        Visualize the prediction with matched keypoints.
         
-        Args:
-            query_image: Query image to classify
-            output_path: Optional path to save visualization
-        
-        Returns:
-            Visualization image as numpy array
-        
-        Raises:
-            RuntimeError: If prediction fails or no matches found
-        """
         # Convert query to grayscale for prediction
         query_gray = self._to_grayscale(query_image)
         

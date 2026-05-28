@@ -1,0 +1,209 @@
+"""
+Banknote Segmentation Module
+Extracts and warps banknotes from images using contour detection,
+aspect ratio validation, and color confidence scoring.
+"""
+
+import cv2
+import numpy as np
+from Data.preprocessing import preprocessing_CLAHE
+
+# South African Banknote Aspect Ratios (width/height)
+# Different denominations have slightly different ratios
+SARB_RATIOS = [1.80, 1.95, 2.10]
+
+
+def segment_note(image, use_clahe=False):
+    """
+    Main segmentation function - extracts banknote from background.
+    
+    Args:
+        image: Input image (BGR format)
+        use_clahe: Not used in this version (kept for compatibility)
+    
+    Returns:
+        Warped and cropped banknote image, or original if segmentation fails
+    """
+    if image is None:
+        return None
+
+    # Step 1: Find best candidate contour with confidence score
+    candidate = _find_best_candidate(image)
+    if not candidate:
+        return image  # Fallback: return original if nothing found
+
+    contour, score = candidate
+
+    # Step 2: Validate confidence threshold
+    # Lower confidence means likely not a banknote
+    if score < 0.6:
+        return image  # Reject if confidence is too low
+
+    # Step 3: Extract true corners of the banknote
+    corners = _get_true_corners(contour)
+
+    # Step 4: Apply perspective transform to straighten the note
+    warped = _apply_perspective(image, corners)
+
+    return preprocessing_CLAHE(warped)
+
+
+def _get_color_confidence(roi):
+    """
+    Rejects background by checking color variance.
+    Banknotes have higher saturation than typical backgrounds.
+    
+    Args:
+        roi: Region of interest (banknote candidate area)
+    
+    Returns:
+        Confidence score based on average saturation (0-1)
+    """
+    # Convert to HSV color space (Hue, Saturation, Value)
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    saturation = hsv[:, :, 1]  # Saturation channel
+    
+    # Higher saturation = more likely a banknote
+    return np.mean(saturation) / 255.0
+
+
+def _get_true_corners(contour):
+    """
+    Extracts the 4 true corners of the banknote contour.
+    
+    Args:
+        contour: Detected contour from edge detection
+    
+    Returns:
+        Array of 4 corner points in order
+    """
+    # Calculate contour perimeter
+    peri = cv2.arcLength(contour, True)
+    
+    # Try different epsilon values to find a 4-corner polygon
+    for epsilon in np.linspace(0.01, 0.1, 10):
+        approx = cv2.approxPolyDP(contour, epsilon * peri, True)
+        if len(approx) == 4:
+            return approx.reshape(4, 2)
+
+    # Fallback: use minimum area rectangle if 4 corners not found
+    rect = cv2.minAreaRect(contour)
+    return cv2.boxPoints(rect).astype(np.int32)
+
+
+def _find_best_candidate(image):
+    """
+    Finds the best banknote candidate using confidence scoring.
+    Combines aspect ratio validation and color saturation.
+    
+    Args:
+        image: Input BGR image
+    
+    Returns:
+        Tuple of (best_contour, best_score) or None if no candidates
+    """
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Apply CLAHE to enhance contrast for edge detection
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    gray = clahe.apply(gray)
+
+    # Edge detection
+    edges = cv2.Canny(gray, 50, 150)
+    
+    # Close gaps in edges using morphological closing
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
+    closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+
+    # Find all contours
+    contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    best_score = 0
+    best_contour = None
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        
+        # Skip tiny contours (less than 5% of image area)
+        if area < (image.shape[0] * image.shape[1] * 0.05):
+            continue
+
+        # Get bounding rectangle for aspect ratio calculation
+        rect = cv2.minAreaRect(contour)
+        (width, height) = rect[1]
+        
+        # Calculate aspect ratio (width/height, always >= 1)
+        ratio = max(width, height) / min(width, height)
+
+        # Score 1: Aspect Ratio Match
+        # How close is this ratio to known SARB note ratios?
+        ratio_diff = min([abs(ratio - r) for r in SARB_RATIOS])
+        ar_score = max(0, 1 - (ratio_diff / 0.5))
+
+        # Score 2: Color/Saturation Score
+        # Banknotes have higher color saturation than backgrounds
+        x, y, w, h = cv2.boundingRect(contour)
+        roi = image[y:y+h, x:x+w]
+        color_score = _get_color_confidence(roi)
+
+        # Combined confidence score (weighted)
+        # 40% aspect ratio, 60% color saturation
+        score = (ar_score * 0.4) + (color_score * 0.6)
+
+        # Keep the best candidate
+        if score > best_score:
+            best_score = score
+            best_contour = contour
+
+    return (best_contour, best_score) if best_contour is not None else None
+
+
+def _apply_perspective(image, corners):
+    """
+    Applies perspective transform to straighten the banknote.
+    
+    Args:
+        image: Original BGR image
+        corners: 4 corner points of the banknote
+    
+    Returns:
+        Warped (straightened) banknote image
+    """
+    # Sort corners in order: top-left, top-right, bottom-right, bottom-left
+    rect = np.zeros((4, 2), dtype="float32")
+    
+    # Sum of coordinates: smallest sum = top-left, largest sum = bottom-right
+    s = corners.sum(axis=1)
+    rect[0] = corners[np.argmin(s)]  # Top-left
+    rect[2] = corners[np.argmax(s)]  # Bottom-right
+    
+    # Difference of coordinates: smallest diff = top-right, largest diff = bottom-left
+    diff = np.diff(corners, axis=1)
+    rect[1] = corners[np.argmin(diff)]  # Top-right
+    rect[3] = corners[np.argmax(diff)]  # Bottom-left
+
+    # Calculate output dimensions
+    (tl, tr, br, bl) = rect
+    width = int(max(
+        np.linalg.norm(br - bl),   # Bottom edge length
+        np.linalg.norm(tr - tl)    # Top edge length
+    ))
+    height = int(max(
+        np.linalg.norm(tr - br),   # Right edge length
+        np.linalg.norm(tl - bl)    # Left edge length
+    ))
+
+    # Destination points (straight rectangle)
+    dst = np.array([
+        [0, 0],
+        [width - 1, 0],
+        [width - 1, height - 1],
+        [0, height - 1]
+    ], dtype="float32")
+
+    # Compute perspective transform matrix and apply
+    M = cv2.getPerspectiveTransform(rect, dst)
+    warped = cv2.warpPerspective(image, M, (width, height))
+
+    return warped

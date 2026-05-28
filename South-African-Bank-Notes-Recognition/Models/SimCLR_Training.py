@@ -248,7 +248,6 @@ if __name__ == "__main__":
     save_path = os.path.join(CONFIG["checkpoint_dir"], CONFIG["best_model_name"])
     torch.save(global_best_checkpoint, save_path)
         
-    print("\n" + "=" * 60)
     print("5-FOLD CV COMPLETE")
     print(f"Average Accuracy: {np.mean(fold_results)*100:.1f}% ± {np.std(fold_results)*100:.1f}%")
     print(f"Highest performing model (Fold {global_best_checkpoint['fold']}) saved to: {save_path}")
