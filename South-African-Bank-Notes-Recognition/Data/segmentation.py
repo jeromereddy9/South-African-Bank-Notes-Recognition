@@ -1,9 +1,6 @@
 import cv2
 import numpy as np
-from Data.preprocessing import (
-    apply_gaussian_smoothing,
-    preprocessing_CLAHE
-)
+from Data.preprocessing import apply_gaussian_smoothing
 
 def detect_edges_canny(image, low_threshold=40, high_threshold=120):
 
