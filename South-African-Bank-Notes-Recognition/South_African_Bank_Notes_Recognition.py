@@ -95,7 +95,7 @@ def ensemble_predict(r_res, s_res, f_res):
     winner = max(scores, key=scores.get)
     
     # Return Unknown if max score is below threshold
-    if scores[winner] <= 0:
+    if scores[winner] <= 0.4:
         return "Unknown"
         
     return winner
