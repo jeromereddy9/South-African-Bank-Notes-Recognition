@@ -16,7 +16,7 @@ You can verify that you are in the correct location by checking that the file So
 
 3) Once you have navigated to the correct directory, launch the Streamlit web application using the following command:
 
-streamlit run South_African_Bank_Notes_Recognition.py
+       streamlit run South_African_Bank_Notes_Recognition.py
 
 After the application starts, Streamlit will display a local URL in the terminal, typically http://localhost:8501, and may automatically open a web browser window. If a browser window does not open automatically, copy and paste the displayed URL into your web browser. The graphical user interface will then be available, allowing you to upload banknote images and run the recognition pipeline.
 
