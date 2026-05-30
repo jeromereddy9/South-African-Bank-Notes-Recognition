@@ -1,2 +1,20 @@
 # South African Bank Notes Recognition
-For this group project, we built an image processing system to classify South African bank notes (R10–R200). Using real-world data, we compared multiple techniques to ensure the system was invariant to scale, rotation, and side. The final model accurately identified both old and new notes regardless of their orientation or which face was shown.
+An image processing system for classifying South African banknotes (R10, R10, R50, R100, R200) invariant to rotation, scale, and side. Implements three models (SIFT-FLANN, ResNet-18, SimCLR) with ensemble voting. Includes preprocessing, segmentation, feature extraction, and a Streamlit GUI.
+
+How to Run the Application
+
+1) To run the application, first download or clone the project repository to your computer. Open a terminal or command prompt and navigate to the folder where the project was downloaded or extracted. Once you are in the repository's root directory, install the required Python dependencies by executing the following command:
+
+                 pip install -r requirements.txt
+
+2) After the installation is complete, navigate to the directory containing the application script. Because the repository contains a nested folder structure, you must first be in the project root directory and then execute the following command:
+
+         cd South-African-Bank-Notes-Recognition-main/South-African-Bank-Notes-Recognition-main
+
+You can verify that you are in the correct location by checking that the file South_African_Bank_Notes_Recognition.py is present in the current directory.
+
+3) Once you have navigated to the correct directory, launch the Streamlit web application using the following command:
+
+streamlit run South_African_Bank_Notes_Recognition.py
+
+After the application starts, Streamlit will display a local URL in the terminal, typically http://localhost:8501, and may automatically open a web browser window. If a browser window does not open automatically, copy and paste the displayed URL into your web browser. The graphical user interface will then be available, allowing you to upload banknote images and run the recognition pipeline.
