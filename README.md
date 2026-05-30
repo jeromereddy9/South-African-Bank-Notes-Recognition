@@ -1,5 +1,5 @@
 # South African Bank Notes Recognition
-<<<<<<< HEAD
+
 An image processing system for classifying South African banknotes (R10, R10, R50, R100, R200) invariant to rotation, scale, and side. Implements three models (SIFT-FLANN, ResNet-18, SimCLR) with ensemble voting. Includes preprocessing, segmentation, feature extraction, and a Streamlit GUI.
 
 How to Run the Application
@@ -19,6 +19,5 @@ You can verify that you are in the correct location by checking that the file So
 streamlit run South_African_Bank_Notes_Recognition.py
 
 After the application starts, Streamlit will display a local URL in the terminal, typically http://localhost:8501, and may automatically open a web browser window. If a browser window does not open automatically, copy and paste the displayed URL into your web browser. The graphical user interface will then be available, allowing you to upload banknote images and run the recognition pipeline.
-=======
 
->>>>>>> 67503e53ef8080be84942f3ec2103b2a760af26b
+
